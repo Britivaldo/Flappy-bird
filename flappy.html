@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Flappy</title>
+    <script src="sprite.js"></script>
+    <style>
+        canvas {
+            position: absolute;
+            top: 0px;
+            bottom: 0px;
+            left: 0px;
+            right: 0px;
+            margin: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas height="600" width="600"></canvas>
+    <script>
+        var canvas, ctx, ALTURA, LARGURA, velocidade = 2, estadoAtual, img, maxPersonagem = 0, frame = 0,
+
+            estados = {
+                jogar: 0,
+                jogando: 1,
+                perdeu: 2
+            },
+
+            chao = {
+                y: 500,
+                altura: 100,
+                cor: "#e8da78",
+
+                desenha: function () {
+                    //ctx.fillStyle = this.cor;
+                    //ctx.fillRect(0, this.y, LARGURA, this.altura);
+
+                    spriteChao.desenha(0, this.y);
+                }
+
+            },
+
+            personagem = {
+                y: 50,
+                x: 100,
+                altura: spriteBoneco[maxPersonagem].altura,
+                largura: spriteBoneco[maxPersonagem].largura,
+                cor: "#ff9239",
+                gravidade: 1.0,
+                velocidade: 0,
+                forcaDoPulo: 12.6,
+                score: 0,
+
+                atualiza: function () {
+                    this.velocidade += this.gravidade;
+                    this.y += this.velocidade;
+                    if (this.y >= chao.y - this.altura) {
+                        this.y = chao.y - this.altura;
+                        this.velocidade = 0;
+                    }
+                },
+
+                pula: function () {
+                    this.velocidade = -this.forcaDoPulo;
+                },
+
+                desenha: function () {
+                    //ctx.fillStyle = this.cor;
+                    //ctx.fillRect(this.x, this.y, this.largura, this.altura);
+                    frame ++;
+                    if(maxPersonagem == 2){
+                        maxPersonagem = 0;
+                        
+                    }else if(frame == 9){
+                        maxPersonagem ++;
+                        frame = 0;
+                    }
+                    console.log(frame);
+                    console.log(maxPersonagem);
+
+                    spriteBoneco[maxPersonagem].desenha(this.x, this.y);
+
+                }
+            },
+
+            Obstaculo = {
+                _obsBaixo: [],
+                _obsAcima: [],
+                cor: "#ff9239",
+                tempoInsere: 0,
+
+                insere: function () {
+
+                    tamanho = 100 + Math.floor(150 * Math.random());
+
+                    this._obsBaixo.push({
+                        x: LARGURA,
+                        y: 500 - tamanho,
+                        largura: 54,
+                        altura: tamanho,
+                        cor: this.cor
+                    });
+
+                    this._obsAcima.push({
+                        x: LARGURA,
+                        y: 0,
+                        largura: 54,
+                        altura: 500 - (tamanho + 200),
+                        cor: this.cor
+                    });
+
+                    this.tempoInsere = 200;
+
+                },
+
+                desenha: function () {
+
+
+                    for (var i = 0, tam = this._obsBaixo.length; i < tam; i++) {
+                        var obsBaixo = this._obsBaixo[i];
+                        var obsAcima = this._obsAcima[i];
+
+                        //ctx.fillStyle = obsBaixo.cor;
+                        //ctx.fillRect(obsBaixo.x, obsBaixo.y, obsBaixo.largura, obsBaixo.altura);
+
+                        //spriteBaixo.desenha(obsBaixo.x, obsBaixo.y);
+
+                        spriteBaixo.desenha(obsBaixo.x, obsBaixo.y);
+
+                        spriteAcima.desenha0(obsAcima.x, obsAcima.y, obsAcima.altura);
+                        
+
+
+
+                        //ctx.fillStyle = obsAcima.cor;
+                        //ctx.fillRect(obsAcima.x, obsAcima.y, obsAcima.largura, obsAcima.altura);
+                    }
+
+                },
+
+                atualiza: function () {
+
+                    if (this.tempoInsere == 0)
+                        this.insere();
+                    else
+                        this.tempoInsere--;
+
+                    for (var i = 0, tam = this._obsBaixo.length; i < tam; i++) {
+                        var obsBaixo = this._obsBaixo[i];
+                        obsBaixo.x -= velocidade;
+
+                        var obsAcima = this._obsAcima[i];
+                        obsAcima.x -= velocidade;
+                        
+                        //console.log(obsAcima.altura, personagem.y);
+
+                        if(personagem.x < obsBaixo.x + obsBaixo.largura && personagem.x + personagem.largura >= obsBaixo.x && personagem.y + personagem.altura >= chao.y - obsBaixo.altura || obsAcima.altura >= personagem.y && personagem.x < obsBaixo.x + obsBaixo.largura && personagem.x + personagem.largura >= obsBaixo.x){
+
+                            estadoAtual = estados.perdeu;
+
+                        }else if (chao.x <= -chao.largura) {
+                            this._obsBaixo.splice(i, 1);
+                            this._obsAcima.splice(i, 1);
+                            tam--;
+                            i--;
+                        }
+                    }
+
+                },
+
+                limpa: function(){
+                    this._obsAcima = [];
+                    this._obsBaixo = [];
+
+                }
+
+            }
+
+        function clique(event) {
+            if(estadoAtual == estados.jogando)
+                personagem.pula();
+            else if(estadoAtual == estados.jogar)
+                estadoAtual = estados.jogando;
+            else if(estadoAtual == estados.perdeu)
+                estadoAtual = estados.jogar;
+            
+        }
+        
+        function main() {
+
+            ALTURA = window.innerHeight;
+            LARGURA = window.innerWidth;
+
+            if (LARGURA >= 500) {
+                LARGURA = 400;
+                ALTURA = 600;
+            }
+
+            canvas = document.createElement("canvas");
+            canvas.width = LARGURA;
+            canvas.height = ALTURA;
+
+            canvas.style.border = "1px solid #000";
+
+            ctx = canvas.getContext("2d");
+            document.body.appendChild(canvas);
+            document.addEventListener("mousedown", clique);
+
+            estadoAtual = estados.jogar;
+
+
+            img = new Image();
+            img.src = "flappy.png";
+
+            roda();
+
+        }
+
+        function atualiza() {
+            personagem.atualiza();
+
+            if (estadoAtual == estados.jogando) {
+                Obstaculo.atualiza();
+            } else if(estadoAtual == estados.perdeu){
+                Obstaculo.limpa();
+            }
+        }
+
+        function desenha() {
+           
+            //ctx.fillStyle = "#80daff";
+            //ctx.fillRect(0, 0, LARGURA, ALTURA);
+
+            bg.desenha(0, 0);
+
+            if (estadoAtual == estados.jogar) {
+
+                spritePlay.desenha(110 , 230);
+                //ctx.fillStyle = "green";
+                //ctx.fillRect(LARGURA / 2 , ALTURA / 2 , 100, 100);
+            } else if (estadoAtual == estados.perdeu) {
+
+                spriteGameOver.desenha(10, 230);
+
+                //ctx.fillStyle = "red";
+                //ctx.fillRect(LARGURA / 2 , ALTURA / 2, 100, 100);
+            } else if (estadoAtual == estados.jogando) {
+                Obstaculo.desenha();
+            }
+
+            chao.desenha();
+            personagem.desenha();
+        }
+
+        function roda() {
+            atualiza();
+            desenha();
+            window.requestAnimationFrame(roda);
+        }
+
+        main();
+    </script>
+
+</body>
+
+</html>
